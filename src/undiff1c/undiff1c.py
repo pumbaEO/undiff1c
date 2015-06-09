@@ -11,9 +11,9 @@ import sys
 import tempfile
 from unidiff import PatchSet
 
-__version__ = '0.0.1'
+__version__ = '0.0.2'
 
-logging.basicConfig(level=logging.INFO)  # DEBUG => print ALL msgs
+logging.basicConfig(level=logging.ERROR)  # DEBUG => print ALL msgs
 log = logging.getLogger('undiff1c')
 
 modified = re.compile('^(?:M|A)(\s+)(?P<name>.*)')
@@ -64,7 +64,7 @@ def get_list_of_comitted_files():
             return files
 
     for result in output.split('\n'):
-        logging.info(result)
+        log.info(result)
         if result != '':
             match = modified.match(result)
             if match:
@@ -75,16 +75,16 @@ def get_list_of_comitted_files():
 def get_diff_forfile(file):
     tmppath = tempfile.mktemp()
     command = ['git', 'diff', 'HEAD', file]
-    logging.debug("{}".format(command))
-    print("{}".format(command))
+    log.debug("{}".format(command))
     try:
         output = subprocess.check_output(command).decode('utf-8')
     except subprocess.CalledProcessError:
         logging.error('Error diff files {}'.format(file))
         return None
-    with open(tmppath, 'w') as f:
-        f.write(output)
-    #print("{}".format(output))
+    lines = output.split('\r\n') # [x.replace("\n", "") for x in output.split('\r\n')]
+    with open(tmppath, 'w', encoding='utf-8') as f:
+        f.write('\n'.join(lines))
+    log.debug("{}".format(tmppath))
     return tmppath
 
     
@@ -102,32 +102,33 @@ def main():
     
     args = parser.parse_args()
 
-    log.setLevel(10)#max(3 - args.verbose_count, 0) * 10)
+    log.setLevel(max(3 - args.verbose_count, 0) * 10)
+    
     taglistchange = ('<d3p1:id>', '<d3p1:fullIntervalBegin>', '<d3p1:fullIntervalEnd>', '<d3p1:visualBegin>')
 
     if args.g is True:
         files = get_list_of_comitted_files()
-        
         for file in files:
             if not file[-12:] == "Template.xml":
                 continue
                 
             data = get_diff_forfile(file)
             if data is None:
-                logging.error("diff file not exists {}".forma(file))
+                log.error("diff file not exists {}".forma(file))
                 continue
             pathc = PatchSet.from_filename(data, encoding='utf-8')
-            print(data)
-            print(pathc.modified_files)
             for f in pathc.modified_files:
-                logging.debug('file is {}'.format(f))
+                log.debug('file is {}'.format(f))
                 modifiedsource, modifiedtarget = [],[]
                 for hunk in f:
                     modifiedsource = modifiedsource + list(filter(lambda x: not x[:1] == " ", hunk.source))
                     modifiedtarget = modifiedtarget + list(filter(lambda x: not x[:1] == " ", hunk.target))
                 
+                
                 sourcetags = list(filter(lambda x: x[1:].strip().startswith(taglistchange), modifiedsource))
                 targettags = list(filter(lambda x: x[1:].strip().startswith(taglistchange), modifiedtarget))
+                log.debug(sourcetags)
+                log.debug(targettags)
                 
                 if not (len(sourcetags) == len(modifiedsource) and \
                     len(targettags) == len(modifiedtarget) and \
