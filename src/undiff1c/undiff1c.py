@@ -10,6 +10,7 @@ import shutil
 import sys
 import tempfile
 from unidiff import PatchSet
+import codecs
 
 __version__ = '0.0.2'
 
@@ -87,6 +88,57 @@ def get_diff_forfile(file):
     log.debug("{}".format(tmppath))
     return tmppath
 
+def save_text(file, text):
+    with codecs.open(file, 'wb', encoding='utf-8') as w:
+        w.write(text)
+
+def read_file(file):
+    result = ''
+    with codecs.open(file, 'rb', encoding='utf-8') as r:
+        result = r.read()
+    return result
+
+def git_add_files(pathlists):
+    for l in pathlists:
+        result = subprocess.check_call(['git', 'add', '--all', l])
+        if not result == 0:
+            log.error(result)
+            exit(result)
+
+
+def replace_old_form_attr(filelists):
+
+    flags = re.MULTILINE|re.IGNORECASE
+    attributes = []
+    attributes.append(
+        (re.compile('(\s?<SearchControlAddition name="[А-я]*)SearchControl(")', flags), r'\1УправлениеПоиском\2'))
+    attributes.append(
+        (re.compile('(\s?<ContextMenu name="[А-я]*)ViewStatusContextMenu(")', flags), r'\1СостояниеПросмотраКонтекстноеМеню\2'))
+    attributes.append(
+        (re.compile('(\s?<ExtendedTooltip name="[А-я]*)ViewStatusExtendedTooltip(")', flags), r'\1СостояниеПросмотраРасширеннаяПодсказка\2'))
+    attributes.append(
+        (re.compile('(\s?<SearchStringAddition name="[А-я]*)SearchString(")', flags), r'\1СтрокаПоиска\2'))
+    attributes.append(
+        (re.compile('(\s?<ViewStatusAddition name="[А-я]*)ViewStatus(")', flags), r'\1СостояниеПросмотра\2'))
+    
+    print(filelists)
+    changedfiles = []
+    for file in filelists:
+        if not file[-8:] == "Form.xml":
+            continue
+        replacecount = 0
+        lines = read_file(file)
+        for reg in attributes:
+            result = re.subn(reg[0], reg[1], lines)
+            lines, replacecount = result[0], replacecount+result[1]
+            replacecount = replacecount+result[1]
+        if replacecount > 0:
+            save_text(file, lines)
+            changedfiles.append(file)
+            log.debug("changed {}".format(file))
+            
+    git_add_files(changedfiles)
+
     
 def git_reset_file(file, sha):
     output = subprocess.check_output(['git', 'reset', sha, file]).decode('utf-8')
@@ -114,7 +166,7 @@ def main():
                 
             data = get_diff_forfile(file)
             if data is None:
-                log.error("diff file not exists {}".forma(file))
+                log.error("diff file not exists {}".format(file))
                 continue
             pathc = PatchSet.from_filename(data, encoding='utf-8')
             for f in pathc.modified_files:
@@ -138,7 +190,7 @@ def main():
                 #Теперь надо будет отменить изменения в индексе для файла. 
                 git_reset_file(file, 'HEAD')
                 break
-    
+        replace_old_form_attr(files)
 
 if __name__ == '__main__':
     sys.exit(main())
