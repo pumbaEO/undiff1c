@@ -156,7 +156,11 @@ def main():
 
     log.setLevel(max(3 - args.verbose_count, 0) * 10)
     
-    taglistchange = ('<d3p1:id>', '<d3p1:fullIntervalBegin>', '<d3p1:fullIntervalEnd>', '<d3p1:visualBegin>')
+    taglistchange = ('<d3p1:id>', '<d3p1:fullIntervalBegin>',
+                     '<d3p1:fullIntervalEnd>', '<d3p1:visualBegin>',
+                     '<xr:TypeId>',
+                     '<xr:ValueId>'
+                     )
 
     if args.g is True:
         files = get_list_of_comitted_files()
