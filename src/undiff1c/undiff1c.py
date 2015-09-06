@@ -67,7 +67,7 @@ def get_list_of_comitted_files():
     for result in output.split('\n'):
         log.info(result)
         if result != '':
-            match = modified.match(result)
+            match = modified.match(result.strip())
             if match:
                 files.append(match.group('name'))
 
