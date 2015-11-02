@@ -135,7 +135,7 @@ def replace_old_form_attr(filelists):
         if replacecount > 0:
             save_text(file, lines)
             changedfiles.append(file)
-            log.debug("changed {}".format(file))
+            log.info("changed {}".format(file))
             
     git_add_files(changedfiles)
 
@@ -170,7 +170,8 @@ def main():
         files = get_list_of_comitted_files()
         for file in files:
             filename = os.path.basename(file)
-            if not filename.lower() in typefiles:
+            if not (filename.lower() in typefiles or filename[-3:]=="xml"):
+                log.debug("пропускаем файл {} расширение {}".format(file, filename[-3:]))
                 continue
                 
             data = get_diff_forfile(file)
@@ -188,8 +189,7 @@ def main():
                 
                 sourcetags = list(filter(lambda x: x[1:].strip().startswith(taglistchange), modifiedsource))
                 targettags = list(filter(lambda x: x[1:].strip().startswith(taglistchange), modifiedtarget))
-                log.debug(sourcetags)
-                log.debug(targettags)
+                log.debug("sourcetags:{} targettags:{}".format(sourcetags, targettags))
                 
                 if not (len(sourcetags) == len(modifiedsource) and \
                     len(targettags) == len(modifiedtarget) and \
@@ -197,6 +197,7 @@ def main():
                     continue
             
                 #Теперь надо будет отменить изменения в индексе для файла. 
+                log.info("удалем из индекса файл {}".format(file))
                 git_reset_file(file, 'HEAD')
                 break
         replace_old_form_attr(files)
