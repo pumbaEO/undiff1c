@@ -12,7 +12,7 @@ import tempfile
 from unidiff import PatchSet
 import codecs
 
-__version__ = '0.0.2'
+__version__ = '1.0.1'
 
 logging.basicConfig(level=logging.ERROR)  # DEBUG => print ALL msgs
 log = logging.getLogger('undiff1c')
@@ -121,10 +121,10 @@ def replace_old_form_attr(filelists):
     attributes.append(
         (re.compile('(\s?<ViewStatusAddition name="[А-я]*)ViewStatus(")', flags), r'\1СостояниеПросмотра\2'))
     
-    print(filelists)
     changedfiles = []
     for file in filelists:
-        if not file[-8:] == "Form.xml":
+        filename = os.path.basename(file)
+        if not file.lower() == "form.xml":
             continue
         replacecount = 0
         lines = read_file(file)
@@ -159,13 +159,18 @@ def main():
     taglistchange = ('<d3p1:id>', '<d3p1:fullIntervalBegin>',
                      '<d3p1:fullIntervalEnd>', '<d3p1:visualBegin>',
                      '<xr:TypeId>',
-                     '<xr:ValueId>'
+                     '<xr:ValueId>',
+                     '<d4p1:id>'
                      )
+    typefiles = ('template.xml', 
+                 'form.xml'
+                )
 
     if args.g is True:
         files = get_list_of_comitted_files()
         for file in files:
-            if not file[-12:] == "Template.xml":
+            filename = os.path.basename(file)
+            if not filename.lower() in typefiles:
                 continue
                 
             data = get_diff_forfile(file)
