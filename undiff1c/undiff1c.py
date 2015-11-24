@@ -142,7 +142,7 @@ def replace_old_form_attr(filelists):
     
 def git_reset_file(file, sha):
     output = subprocess.check_output(['git', 'reset', sha, file]).decode('utf-8')
-
+    output = subprocess.check_output(['git', 'checkout', file]).decode('utf-8')
 
 def main():
     parser = argparse.ArgumentParser(description='Утилита для проверки ошибочно изменных файлов в индексе')
